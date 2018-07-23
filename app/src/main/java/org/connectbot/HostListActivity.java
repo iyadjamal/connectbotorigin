@@ -85,13 +85,14 @@ public class HostListActivity extends AppCompatListActivity implements OnHostSta
 
 	private boolean waitingForDisconnectAll = false;
 
+	private static boolean reset_before=false;
 	/**
 	 * Whether to close the activity when disconnectAll is called. True if this activity was
 	 * only brought to the foreground via the notification button to disconnect all hosts.
 	 */
 	private boolean closeOnDisconnectAll = true;
 
-	private ServiceConnection connection = new ServiceConnection() {
+	private  ServiceConnection connection = new ServiceConnection() {
 		@Override
 		public void onServiceConnected(ComponentName className, IBinder service) {
 			bound = ((TerminalManager.TerminalBinder) service).getService();
@@ -121,14 +122,13 @@ public class HostListActivity extends AppCompatListActivity implements OnHostSta
 
 		// start the terminal manager service
 		this.bindService(new Intent(this, TerminalManager.class), connection, Context.BIND_AUTO_CREATE);
-
 		hostdb = HostDatabase.get(this);
 	}
 
 	@Override
 	public void onStop() {
 		super.onStop();
-		this.unbindService(connection);
+//		this.unbindService(connection);
 
 		hostdb = null;
 
@@ -146,9 +146,25 @@ public class HostListActivity extends AppCompatListActivity implements OnHostSta
 			Log.d(TAG, "Got disconnect all request");
 			disconnectAll();
 		}
-
-		// Still close on disconnect if waiting for a disconnect.
 		closeOnDisconnectAll = waitingForDisconnectAll && closeOnDisconnectAll;
+		// Still close on disconnect if waiting for a disconnect.
+
+		if(reset_before) {
+			this.unbindService(connection);
+			Intent homeIntent = new Intent(Intent.ACTION_MAIN);
+			homeIntent.addCategory( Intent.CATEGORY_HOME );
+			reset_before=false;
+			homeIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+			startActivity(homeIntent);
+			homeIntent.putExtra("Exit",true);
+		} else {
+			Uri uri = Uri.parse("telnet://@192.168.1.1:23/#192.168.1.1");
+			Intent contents = new Intent(Intent.ACTION_VIEW, uri);
+			contents.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+			contents.setClass(HostListActivity.this, ConsoleActivity.class);
+			reset_before = true;
+			HostListActivity.this.startActivity(contents);
+		}
 	}
 
 	@Override
@@ -167,6 +183,10 @@ public class HostListActivity extends AppCompatListActivity implements OnHostSta
 	@Override
 	public void onCreate(Bundle icicle) {
 		super.onCreate(icicle);
+		System.out.println("hi");
+		if (getIntent().getBooleanExtra("EXIT", false)) {
+			finish();
+		}
 		setContentView(R.layout.act_hostlist);
 		setTitle(R.string.title_hosts_list);
 
@@ -203,7 +223,7 @@ public class HostListActivity extends AppCompatListActivity implements OnHostSta
 		}
 
 		this.makingShortcut = Intent.ACTION_CREATE_SHORTCUT.equals(getIntent().getAction())
-								|| Intent.ACTION_PICK.equals(getIntent().getAction());
+				|| Intent.ACTION_PICK.equals(getIntent().getAction());
 
 		// connect with hosts database and populate list
 		this.hostdb = HostDatabase.get(this);
@@ -312,31 +332,31 @@ public class HostListActivity extends AppCompatListActivity implements OnHostSta
 
 		new android.support.v7.app.AlertDialog.Builder(
 				HostListActivity.this, R.style.AlertDialogTheme)
-			.setMessage(getString(R.string.disconnect_all_message))
-			.setPositiveButton(R.string.disconnect_all_pos, new DialogInterface.OnClickListener() {
-				@Override
-				public void onClick(DialogInterface dialog, int which) {
-					bound.disconnectAll(true, false);
-					waitingForDisconnectAll = false;
+				.setMessage(getString(R.string.disconnect_all_message))
+				.setPositiveButton(R.string.disconnect_all_pos, new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						bound.disconnectAll(true, false);
+						waitingForDisconnectAll = false;
 
-					// Clear the intent so that the activity can be relaunched without closing.
-					// TODO(jlklein): Find a better way to do this.
-					setIntent(new Intent());
+						// Clear the intent so that the activity can be relaunched without closing.
+						// TODO(jlklein): Find a better way to do this.
+						setIntent(new Intent());
 
-					if (closeOnDisconnectAll) {
-						finish();
+						if (closeOnDisconnectAll) {
+							finish();
+						}
 					}
-				}
-			})
-			.setNegativeButton(R.string.disconnect_all_neg, new DialogInterface.OnClickListener() {
-				@Override
-				public void onClick(DialogInterface dialog, int which) {
-					waitingForDisconnectAll = false;
-					// Clear the intent so that the activity can be relaunched without closing.
-					// TODO(jlklein): Find a better way to do this.
-					setIntent(new Intent());
-				}
-			}).create().show();
+				})
+				.setNegativeButton(R.string.disconnect_all_neg, new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						waitingForDisconnectAll = false;
+						// Clear the intent so that the activity can be relaunched without closing.
+						// TODO(jlklein): Find a better way to do this.
+						setIntent(new Intent());
+					}
+				}).create().show();
 	}
 
 	/**
@@ -398,7 +418,6 @@ public class HostListActivity extends AppCompatListActivity implements OnHostSta
 
 		public HostViewHolder(View v) {
 			super(v);
-
 			icon = v.findViewById(android.R.id.icon);
 			nickname = v.findViewById(android.R.id.text1);
 			caption = v.findViewById(android.R.id.text2);
@@ -408,7 +427,7 @@ public class HostListActivity extends AppCompatListActivity implements OnHostSta
 		public void onClick(View v) {
 			// launch off to console details
 			Uri uri = host.getUri();
-
+			System.out.println(host.getPostLogin());
 			Intent contents = new Intent(Intent.ACTION_VIEW, uri);
 			contents.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
@@ -478,7 +497,7 @@ public class HostListActivity extends AppCompatListActivity implements OnHostSta
 				public boolean onMenuItemClick(MenuItem item) {
 					// prompt user to make sure they really want this
 					new android.support.v7.app.AlertDialog.Builder(
-									HostListActivity.this, R.style.AlertDialogTheme)
+							HostListActivity.this, R.style.AlertDialogTheme)
 							.setMessage(getString(R.string.delete_message, host.getNickname()))
 							.setPositiveButton(R.string.delete_pos, new DialogInterface.OnClickListener() {
 								@Override

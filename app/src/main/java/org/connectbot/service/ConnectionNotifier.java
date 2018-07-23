@@ -67,8 +67,8 @@ public abstract class ConnectionNotifier {
 	protected NotificationCompat.Builder newNotificationBuilder(Context context, String id) {
 		NotificationCompat.Builder builder =
 				new NotificationCompat.Builder(context, id)
-				.setSmallIcon(R.drawable.notification_icon)
-				.setWhen(System.currentTimeMillis());
+						.setSmallIcon(R.drawable.notification_icon)
+						.setWhen(System.currentTimeMillis());
 
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
 			createNotificationChannel(context, id);
@@ -160,7 +160,7 @@ public abstract class ConnectionNotifier {
 	public abstract void hideRunningNotification(Service context);
 
 	private static class PreEclair extends ConnectionNotifier {
-		private static final Class<?>[] setForegroundSignature = new Class[] {boolean.class};
+		private static final Class<?>[] setForegroundSignature = new Class[]{boolean.class};
 		private Method setForeground = null;
 
 		private static class Holder {
@@ -176,33 +176,33 @@ public abstract class ConnectionNotifier {
 
 		@Override
 		public void showRunningNotification(Service context) {
-			if (setForeground != null) {
-				Object[] setForegroundArgs = new Object[1];
-				setForegroundArgs[0] = Boolean.TRUE;
-				try {
-					setForeground.invoke(context, setForegroundArgs);
-				} catch (InvocationTargetException e) {
-				} catch (IllegalAccessException e) {
-				}
-				getNotificationManager(context).notify(ONLINE_NOTIFICATION, newRunningNotification(context));
-			}
+//			if (setForeground != null) {
+//				Object[] setForegroundArgs = new Object[1];
+//				setForegroundArgs[0] = Boolean.TRUE;
+//				try {
+//					setForeground.invoke(context, setForegroundArgs);
+//				} catch (InvocationTargetException e) {
+//				} catch (IllegalAccessException e) {
+//				}
+//				getNotificationManager(context).notify(ONLINE_NOTIFICATION, newRunningNotification(context));
+//			}
 		}
 
 		@Override
 		public void hideRunningNotification(Service context) {
-			if (setForeground != null) {
-				Object[] setForegroundArgs = new Object[1];
-				setForegroundArgs[0] = Boolean.FALSE;
-				try {
-					setForeground.invoke(context, setForegroundArgs);
-				} catch (InvocationTargetException e) {
-				} catch (IllegalAccessException e) {
-				}
-				getNotificationManager(context).cancel(ONLINE_NOTIFICATION);
-			}
+//			if (setForeground != null) {
+//				Object[] setForegroundArgs = new Object[1];
+//				setForegroundArgs[0] = Boolean.FALSE;
+//				try {
+//					setForeground.invoke(context, setForegroundArgs);
+//				} catch (InvocationTargetException e) {
+//				} catch (IllegalAccessException e) {
+//				}
+//				getNotificationManager(context).cancel(ONLINE_NOTIFICATION);
+//			}
 		}
-	}
 
+	}
 	@TargetApi(5)
 	private static class EclairAndBeyond extends ConnectionNotifier {
 		private static class Holder {
@@ -211,12 +211,12 @@ public abstract class ConnectionNotifier {
 
 		@Override
 		public void showRunningNotification(Service context) {
-			context.startForeground(ONLINE_NOTIFICATION, newRunningNotification(context));
+//			context.startForeground(ONLINE_NOTIFICATION, newRunningNotification(context));
 		}
 
 		@Override
 		public void hideRunningNotification(Service context) {
-			context.stopForeground(true);
+//			context.stopForeground(true);
 		}
 	}
 }

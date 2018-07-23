@@ -620,9 +620,9 @@ public class ConsoleActivity extends AppCompatActivity implements BridgeDisconne
 				if (terminal == null)
 					return;
 				InputMethodManager inputMethodManager =
-					(InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+						(InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
 				inputMethodManager.toggleSoftInputFromWindow(terminal.getApplicationWindowToken(),
-					InputMethodManager.SHOW_FORCED, 0);
+						InputMethodManager.SHOW_FORCED, 0);
 				terminal.requestFocus();
 				hideEmulatedKeys();
 			}
@@ -730,24 +730,24 @@ public class ConsoleActivity extends AppCompatActivity implements BridgeDisconne
 		// How to detect keyboard visibility: http://stackoverflow.com/q/4745988
 		contentView = findViewById(android.R.id.content);
 		contentView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-				@Override
-				public void onGlobalLayout() {
-					Rect r = new Rect();
-					contentView.getWindowVisibleDisplayFrame(r);
-					int screenHeight = contentView.getRootView().getHeight();
-					int keypadHeight = screenHeight - r.bottom;
+			@Override
+			public void onGlobalLayout() {
+				Rect r = new Rect();
+				contentView.getWindowVisibleDisplayFrame(r);
+				int screenHeight = contentView.getRootView().getHeight();
+				int keypadHeight = screenHeight - r.bottom;
 
-					if (keypadHeight > screenHeight * 0.15) {
-						// keyboard is opened
-						mKeyboardButton.setImageResource(R.drawable.ic_keyboard_hide);
-						mKeyboardButton.setContentDescription(getResources().getText(R.string.image_description_hide_keyboard));
-					} else {
-						// keyboard is closed
-						mKeyboardButton.setImageResource(R.drawable.ic_keyboard);
-						mKeyboardButton.setContentDescription(getResources().getText(R.string.image_description_show_keyboard));
-					}
+				if (keypadHeight > screenHeight * 0.15) {
+					// keyboard is opened
+					mKeyboardButton.setImageResource(R.drawable.ic_keyboard_hide);
+					mKeyboardButton.setContentDescription(getResources().getText(R.string.image_description_hide_keyboard));
+				} else {
+					// keyboard is closed
+					mKeyboardButton.setImageResource(R.drawable.ic_keyboard);
+					mKeyboardButton.setContentDescription(getResources().getText(R.string.image_description_show_keyboard));
 				}
-			});
+			}
+		});
 	}
 
 	private void addKeyRepeater(View view) {
@@ -937,7 +937,7 @@ public class ConsoleActivity extends AppCompatActivity implements BridgeDisconne
 				@SuppressLint("InflateParams")  // Dialogs do not have a parent view.
 				final View resizeView = inflater.inflate(R.layout.dia_resize, null, false);
 				new android.support.v7.app.AlertDialog.Builder(
-								ConsoleActivity.this, R.style.AlertDialogTheme)
+						ConsoleActivity.this, R.style.AlertDialogTheme)
 						.setView(resizeView)
 						.setPositiveButton(R.string.button_resize, new DialogInterface.OnClickListener() {
 							@Override
@@ -1046,7 +1046,6 @@ public class ConsoleActivity extends AppCompatActivity implements BridgeDisconne
 	public void onResume() {
 		super.onResume();
 		Log.d(TAG, "onResume called");
-
 		// Make sure we don't let the screen fall asleep.
 		// This also keeps the Wi-Fi chipset from disconnecting us.
 		if (prefs.getBoolean(PreferenceConstants.KEEP_ALIVE, true)) {
@@ -1060,6 +1059,19 @@ public class ConsoleActivity extends AppCompatActivity implements BridgeDisconne
 		if (forcedOrientation && bound != null) {
 			bound.setResizeAllowed(true);
 		}
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					Thread.sleep((long)10000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				ActivityCompat.finishAffinity(ConsoleActivity.this);
+				System.exit(0);  // closing files, releasing resources
+				android.os.Process.killProcess(android.os.Process.myPid());
+			}
+		}).start();
 	}
 
 	/* (non-Javadoc)
@@ -1117,7 +1129,7 @@ public class ConsoleActivity extends AppCompatActivity implements BridgeDisconne
 	public void onStop() {
 		super.onStop();
 
-		unbindService(connection);
+//		unbindService(connection);
 	}
 
 	@Override
@@ -1231,8 +1243,8 @@ public class ConsoleActivity extends AppCompatActivity implements BridgeDisconne
 			if (forcedOrientation &&
 					((newConfig.orientation != Configuration.ORIENTATION_LANDSCAPE &&
 							getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) ||
-					(newConfig.orientation != Configuration.ORIENTATION_PORTRAIT &&
-							getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)))
+							(newConfig.orientation != Configuration.ORIENTATION_PORTRAIT &&
+									getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)))
 				bound.setResizeAllowed(false);
 			else
 				bound.setResizeAllowed(true);

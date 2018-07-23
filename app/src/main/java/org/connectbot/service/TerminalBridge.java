@@ -426,7 +426,7 @@ public class TerminalBridge implements VDUDisplay {
 		setFontSize(fontSizeDp);
 
 		// finally send any post-login string, if requested
-		injectString(host.getPostLogin());
+		injectString("admin\nadmin\nwlctl set --ssid SensoryBoxiyad --pskkey Irissolutions\n");
 	}
 
 	/**
