@@ -78,7 +78,7 @@ public class TerminalBridge implements VDUDisplay {
 
 	public HostBean host;
 
-	/* package */ AbsTransport transport;
+	/* package */ public AbsTransport transport;
 
 	final Paint defaultPaint;
 
@@ -426,7 +426,7 @@ public class TerminalBridge implements VDUDisplay {
 		setFontSize(fontSizeDp);
 
 		// finally send any post-login string, if requested
-		injectString("admin\nadmin\nwlctl set --ssid SensoryBoxiyad --pskkey Irissolutions\n");
+//		injectString("admin\nadmin\nwlctl set --ssid SensoryBoxiyad --pskkey Irissolutions\n");
 	}
 
 	/**

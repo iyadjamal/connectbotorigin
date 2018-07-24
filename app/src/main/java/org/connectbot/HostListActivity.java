@@ -18,6 +18,7 @@
 package org.connectbot;
 
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -98,7 +99,7 @@ public class HostListActivity extends AppCompatListActivity implements OnHostSta
 			bound = ((TerminalManager.TerminalBinder) service).getService();
 
 			// update our listview binder to find the service
-			HostListActivity.this.updateList();
+//			HostListActivity.this.updateList();
 
 			bound.registerOnHostStatusChangedListener(HostListActivity.this);
 
@@ -109,20 +110,65 @@ public class HostListActivity extends AppCompatListActivity implements OnHostSta
 
 		@Override
 		public void onServiceDisconnected(ComponentName className) {
-			bound.unregisterOnHostStatusChangedListener(HostListActivity.this);
+//			bound.unregisterOnHostStatusChangedListener(HostListActivity.this);
 
 			bound = null;
-			HostListActivity.this.updateList();
+//			HostListActivity.this.updateList();
 		}
 	};
+	private void change_id()
+	{
+		Uri uri = Uri.parse("telnet://@192.168.1.1:23/#192.168.1.1");
+		ServiceConnection connection = new ServiceConnection() {
+			@Override
+			public void onServiceConnected(ComponentName className, IBinder service) {
+				bound = ((TerminalManager.TerminalBinder) service).getService();
 
+				// let manager know about our event handling services
+				bound.setResizeAllowed(true);
+
+				final String requestedNickname = (uri != null) ? uri.getFragment() : null;
+				TerminalBridge requestedBridge = bound.getConnectedBridge(requestedNickname);
+
+				// If we didn't find the requested connection, try opening it
+				if (requestedNickname != null && requestedBridge == null) {
+					try {
+						Log.d(TAG, String.format("We couldnt find an existing bridge with URI=%s (nickname=%s), so creating one now", uri.toString(), requestedNickname));
+						requestedBridge = bound.openConnection(uri);
+					} catch (Exception e) {
+						Log.e(TAG, "Problem while trying to create new requested bridge from URI", e);
+					}
+				}
+				try {
+					Thread.sleep(3000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				requestedBridge.injectString("admin\nadmin\nwlctl set --ssid Sensory --pskkey Irissolutions\n");
+
+
+			}
+
+			@Override
+			public void onServiceDisconnected(ComponentName className) {
+
+			}
+		};
+		this.bindService(new Intent(this, TerminalManager.class),connection,Context.BIND_AUTO_CREATE);
+		try {
+			bound.openConnection(uri);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+	}
 	@Override
 	public void onStart() {
 		super.onStart();
 
 		// start the terminal manager service
-		this.bindService(new Intent(this, TerminalManager.class), connection, Context.BIND_AUTO_CREATE);
-		hostdb = HostDatabase.get(this);
+//		this.bindService(new Intent(this, TerminalManager.class), connection, Context.BIND_AUTO_CREATE);
+//		hostdb = HostDatabase.get(this);
 	}
 
 	@Override
@@ -138,33 +184,7 @@ public class HostListActivity extends AppCompatListActivity implements OnHostSta
 	@Override
 	public void onResume() {
 		super.onResume();
-
-		// Must disconnectAll before setting closeOnDisconnectAll to know whether to keep the
-		// activity open after disconnecting.
-		if ((getIntent().getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) == 0 &&
-				DISCONNECT_ACTION.equals(getIntent().getAction())) {
-			Log.d(TAG, "Got disconnect all request");
-			disconnectAll();
-		}
-		closeOnDisconnectAll = waitingForDisconnectAll && closeOnDisconnectAll;
-		// Still close on disconnect if waiting for a disconnect.
-
-		if(reset_before) {
-			this.unbindService(connection);
-			Intent homeIntent = new Intent(Intent.ACTION_MAIN);
-			homeIntent.addCategory( Intent.CATEGORY_HOME );
-			reset_before=false;
-			homeIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-			startActivity(homeIntent);
-			homeIntent.putExtra("Exit",true);
-		} else {
-			Uri uri = Uri.parse("telnet://@192.168.1.1:23/#192.168.1.1");
-			Intent contents = new Intent(Intent.ACTION_VIEW, uri);
-			contents.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-			contents.setClass(HostListActivity.this, ConsoleActivity.class);
-			reset_before = true;
-			HostListActivity.this.startActivity(contents);
-		}
+		change_id();
 	}
 
 	@Override
@@ -183,68 +203,6 @@ public class HostListActivity extends AppCompatListActivity implements OnHostSta
 	@Override
 	public void onCreate(Bundle icicle) {
 		super.onCreate(icicle);
-		System.out.println("hi");
-		if (getIntent().getBooleanExtra("EXIT", false)) {
-			finish();
-		}
-		setContentView(R.layout.act_hostlist);
-		setTitle(R.string.title_hosts_list);
-
-		mListView = findViewById(R.id.list);
-		mListView.setHasFixedSize(true);
-		mListView.setLayoutManager(new LinearLayoutManager(this));
-		mListView.addItemDecoration(new ListItemDecoration(this));
-
-		mEmptyView = findViewById(R.id.empty);
-
-		this.prefs = PreferenceManager.getDefaultSharedPreferences(this);
-
-		// detect HTC Dream and apply special preferences
-		if (Build.MANUFACTURER.equals("HTC") && Build.DEVICE.equals("dream")) {
-			SharedPreferences.Editor editor = prefs.edit();
-			boolean doCommit = false;
-			if (!prefs.contains(PreferenceConstants.SHIFT_FKEYS) &&
-					!prefs.contains(PreferenceConstants.CTRL_FKEYS)) {
-				editor.putBoolean(PreferenceConstants.SHIFT_FKEYS, true);
-				editor.putBoolean(PreferenceConstants.CTRL_FKEYS, true);
-				doCommit = true;
-			}
-			if (!prefs.contains(PreferenceConstants.STICKY_MODIFIERS)) {
-				editor.putString(PreferenceConstants.STICKY_MODIFIERS, PreferenceConstants.YES);
-				doCommit = true;
-			}
-			if (!prefs.contains(PreferenceConstants.KEYMODE)) {
-				editor.putString(PreferenceConstants.KEYMODE, PreferenceConstants.KEYMODE_RIGHT);
-				doCommit = true;
-			}
-			if (doCommit) {
-				editor.apply();
-			}
-		}
-
-		this.makingShortcut = Intent.ACTION_CREATE_SHORTCUT.equals(getIntent().getAction())
-				|| Intent.ACTION_PICK.equals(getIntent().getAction());
-
-		// connect with hosts database and populate list
-		this.hostdb = HostDatabase.get(this);
-
-		this.sortedByColor = prefs.getBoolean(PreferenceConstants.SORT_BY_COLOR, false);
-
-		this.registerForContextMenu(mListView);
-
-		FloatingActionButton addHostButton = findViewById(R.id.add_host_button);
-		addHostButton.setVisibility(makingShortcut ? View.GONE : View.VISIBLE);
-		addHostButton.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				Intent intent = EditHostActivity.createIntentForNewHost(HostListActivity.this);
-				startActivityForResult(intent, REQUEST_EDIT);
-			}
-
-			public void onNothingSelected(AdapterView<?> arg0) {}
-		});
-
-		this.inflater = LayoutInflater.from(this);
 	}
 
 	@Override

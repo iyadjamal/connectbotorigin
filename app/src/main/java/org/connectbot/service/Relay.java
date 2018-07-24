@@ -116,6 +116,7 @@ public class Relay implements Runnable {
 				charWidth = bridge.charWidth;
 				bytesToRead = byteBuffer.capacity() - byteBuffer.limit();
 				offset = byteBuffer.arrayOffset() + byteBuffer.limit();
+
 				bytesRead = transport.read(byteArray, offset, bytesToRead);
 
 				if (bytesRead > 0) {
@@ -141,8 +142,9 @@ public class Relay implements Runnable {
 					bridge.redraw();
 				}
 			}
-		} catch (IOException e) {
+		} catch (Exception e) {
 			Log.e(TAG, "Problem while handling incoming data in relay thread", e);
+			return;
 		}
 	}
 }
